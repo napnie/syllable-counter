@@ -75,7 +75,7 @@ public class WordCounterTest {
 			System.exit(1);
 		}
 		
-		SyllableCounter counter = new SimpleSyllableCounter();
+		SyllableCounter counter = new OOSyllableCounter();
 		int correct = 0;
 		int incorrect = 0;
 		for( String word : words.keySet() ) {

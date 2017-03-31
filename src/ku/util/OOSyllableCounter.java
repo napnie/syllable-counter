@@ -1,31 +1,41 @@
 package ku.util;
 
-public class OOSyllableCounter {
+/**
+ * Count syllables of word with O-O approach to state machine.
+ * @author Nitith Chayakul
+ * @version 1.0
+ *
+ */
+public class OOSyllableCounter extends SyllableCounter {
+	/** state of this object */
 	private State state;
+	/** Start state : current char is at the start of word */
 	private final State START = new StartState();
+	/** Consonant state : current char is consonant */
 	private final State CONSONANT = new ConsonantState();
-	private final State VOWEL =  new VowelState();
-	private final State MULTIVOWEL = new MultivowelState();
+	/** Single Vowel state : current char is single vowel */
+	private final State SINGLE_VOWEL = new SingleVowelState();
+	/** Multi Vowel state : current char is multi vowel */
+	private final State MULTI_VOWEL = new MultiVowelState();
+	/** Hyphen state : current char is hyphen */
 	private final State HYPHEN = new HyphenState();
+	/** Nonword state : current char is nonword */
 	private final State NONWORD = new NonwordState();
-	private final State FINAL = new FinalState();
-	private final State END = new EndState();
 	
+	/** count of syllables in word */
 	private int syllables;
+	/** index of char in word */
 	private int index;
+	/** length of word */
 	private int length;
 	
-	/**
-	 * Count syllables in word
-	 * @param word - String of word that want to count syllables
-	 * @return syllables of word
-	 */
+	/** @see SyllableCounter#countSyllables(String) */
 	public int countSyllables(String word) {
 		syllables = 0;
 		setState(START);
 		length = word.length();
 		for (index = 0 ; index < length ; index++) {
-			state.handleChar( word.charAt(index) );
+			state.handleChar( Character.toLowerCase( word.charAt(index) ) );
 		}
 		return syllables;
 	}
@@ -36,18 +46,17 @@ public class OOSyllableCounter {
 	 * @return true if c is ignore
 	 */
 	private boolean isIgnore(char c) {
-		if (c == '\'' || c == ' ') return true;
+		if (c == '\'') return true;
 		return false;
 	}
 	
 	/**
-	 * Check if char is garbage.
+	 * Check if char is letter
 	 * @param c - char that want to check
-	 * @return true if c is garbage
+	 * @return true if c is letter
 	 */
-	private boolean isGarbage(char c) {
-		if ( !Character.isLetter(c) && !isVowel(c) && !isHyphen(c) && !isIgnore(c) ) return true;
-		return false;
+	private boolean isLetter(char c) {
+		return Character.isLetter(c) ;
 	}
 
 	/**
@@ -73,129 +82,120 @@ public class OOSyllableCounter {
 		return false;
 	}
 	
+	/**
+	 * Set state of OOSyllableCounter.
+	 * @param state - state that want to set
+	 */
 	private void setState(State state) {
 		this.state = state;
 	}
 	
-	interface CountSyllablesState {
-		public void count();
-	}
-	
+	/** State for OOSyllableCounter. */
 	abstract class State {
+		/**
+		 * See if this char is syllable.
+		 * @param c - char that want to check
+		 */
 		public abstract void handleChar(char c);
+		
+		/** Event when entered this state. */
 		public void enterState() { /* default is to do nothing */ };
 	}
 	
+	/** Behavior for count syllable in Start state. */
 	class StartState extends State {
 
+		/** @see State#handleChar(char) */
 		@Override
 		public void handleChar(char c) {
-			if ( isGarbage(c) || isHyphen(c) ) setState(NONWORD);
+			if ( isLetter(c) && !isVowel(c) ) setState(CONSONANT);
 			else if ( isVowel(c) || c == 'y' ) {
-				setState(VOWEL);
+				syllables++;
+				setState(SINGLE_VOWEL);
 			}
-			else if ( Character.isLetter(c) || isIgnore(c) ) setState(CONSONANT);
+			else if ( !isLetter(c) ) setState(NONWORD);
+			else if ( c == ' ' ) ; // remain start
 		}
 		
 	}
 	
+	/** Behavior for count syllable in Consonant state. */
 	class ConsonantState extends State {
 
+		/** @see State#handleChar(char) */
 		@Override
 		public void handleChar(char c) {
-			if (index == length-2 ) {
-				if ( isVowel(c) ) {
-					syllables++;
-					setState(END);
-				}
-				else setState(FINAL);
-			}
+			if ( c == 'e' && index == length-1 && syllables != 0 ) ;
 			else if ( isVowel(c) || c == 'y' ) {
-				setState(VOWEL);
+				syllables++;
+				setState(SINGLE_VOWEL);
 			}
-			else if ( Character.isLetter(c) ) ;// stay consonant
+			else if ( isLetter(c) && !isVowel(c) || isIgnore(c) ) ; //remain consonant
 			else if ( isHyphen(c) ) setState(HYPHEN);
-			else if ( isGarbage(c) ) setState(NONWORD);
+			else if ( !isLetter(c) ) setState(NONWORD);
 		}
 		
 	}
 	
-	class VowelState extends State {
+	/** Behavior for count syllable in Single Vowel state. */
+	class SingleVowelState extends State {
 
+		/** @see State#handleChar(char) */
 		@Override
 		public void handleChar(char c) {
-			enterState();
-			if (index == length-1 ) setState(END);
-			else if ( isVowel(c) ) setState(MULTIVOWEL);
-			else if ( Character.isLetter(c) || isIgnore(c) ) setState(CONSONANT);
+			if ( isLetter(c) && !isVowel(c) || isIgnore(c) ) setState(CONSONANT);
+			else if ( isVowel(c) ) setState(MULTI_VOWEL);
 			else if ( isHyphen(c) ) setState(HYPHEN);
-			else if ( isGarbage(c) ) setState(NONWORD);
-		}
-		
-		public void enterState() {
-			syllables++;
+			else if ( !isLetter(c) ) setState(NONWORD);
 		}
 	}
 	
-	class MultivowelState extends State {
+	/** Behavior for count syllable in Multi Vowel state. */
+	class MultiVowelState extends State {
 
+		/** @see State#handleChar(char) */
 		@Override
 		public void handleChar(char c) {
-			if (index == length-1 ) setState(END);
-			else if ( isVowel(c) ) ;// stay multivowel
-			else if ( Character.isLetter(c) || isIgnore(c) ) setState(CONSONANT);
+			if ( isLetter(c) && !isVowel(c) || isIgnore(c) ) setState(CONSONANT);
+			else if ( isVowel(c) ) ; //remain multivowel
 			else if ( isHyphen(c) ) setState(HYPHEN);
-			else if ( isGarbage(c) ) setState(NONWORD);
-//			setState(CONSONANT);
+			else if ( !isLetter(c) ) setState(NONWORD);
 		}
 		
 	}
 	
+	/** Behavior for count syllable in Hyphen state. */
 	class HyphenState extends State {
 
+		/** @see State#handleChar(char) */
 		@Override
 		public void handleChar(char c) {
-			if ( isVowel(c) || c == 'y' ) {
-				setState(VOWEL);
+			if ( c == 'y' && index == length-1 ) syllables++;
+			else if ( isVowel(c) || c == 'y' ) {
+				syllables++;
+				setState(SINGLE_VOWEL);
 			}
-			else if ( Character.isLetter(c) || isIgnore(c) ) setState(CONSONANT);
+			else if ( isLetter(c) && !isVowel(c) || isIgnore(c) ) setState(CONSONANT);
+			else if ( c == 'e' && index == length-1 && syllables != 0) ;
 			else if ( isHyphen(c) ) setState(NONWORD);
-			else if ( isGarbage(c) ) setState(NONWORD);
+			else if ( !isLetter(c) ) setState(NONWORD);
 		}
 		
 	}
 	
+	/** Behavior for count syllable in Nonword state. */
 	class NonwordState extends State {
 
+		/** @see State#handleChar(char) */
 		@Override
 		public void handleChar(char c) {
 			enterState();
 		}
 		
+		/** @see State#enterState() */
+		@Override
 		public void enterState() {
 			syllables = 0;
-		}
-		
-	}
-	
-	class FinalState extends State {
-
-		@Override
-		public void handleChar(char c) {
-			if ( isGarbage(c) ) setState(NONWORD);
-			else if ( isVowel(c) && c != 'e' ) syllables++;
-			else if ( syllables == 0 && c == 'e' ) syllables++;
-			else if ( c == 'y' ) syllables++;
-			else if ( Character.isLetter(c) || isIgnore(c) ) setState(END);
-		}
-		
-	}
-	
-	class EndState extends State {
-
-		@Override
-		public void handleChar(char c) {
-			// do nothing.
 		}
 		
 	}
