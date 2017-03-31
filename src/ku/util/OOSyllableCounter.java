@@ -41,48 +41,6 @@ public class OOSyllableCounter extends SyllableCounter {
 	}
 	
 	/**
-	 * Check if char is ignore
-	 * @param c - char that want to check
-	 * @return true if c is ignore
-	 */
-	private boolean isIgnore(char c) {
-		if (c == '\'') return true;
-		return false;
-	}
-	
-	/**
-	 * Check if char is letter
-	 * @param c - char that want to check
-	 * @return true if c is letter
-	 */
-	private boolean isLetter(char c) {
-		return Character.isLetter(c) ;
-	}
-
-	/**
-	 * check if char is hyphen (-)
-	 * @param c - char that want to check
-	 * @return true if c is hyphen
-	 */
-	private boolean isHyphen(char c) {
-		if (c == '-') return true;
-		return false;
-	}
-
-	/**
-	 * Check if char is vowel.
-	 * @param c - char that want to check
-	 * @return true if c is vowel
-	 */
-	private boolean isVowel(char c) {
-		char[] vowel = {'a', 'A', 'e', 'E', 'i', 'I', 'o', 'O', 'u', 'U'};
-		for (char check : vowel) {
-			if (c == check) return true;
-		}
-		return false;
-	}
-	
-	/**
 	 * Set state of OOSyllableCounter.
 	 * @param state - state that want to set
 	 */
